@@ -11,6 +11,7 @@ LIMIT = 5
 BASE_URL = "https://instamart.in"
 SEARCH_PAGE_PATH = "/search"
 SEARCH_API_PATH = "/api/instamart/search/v2"
+IMAGE_BASE_URL = "https://media-assets.swiggy.com/swiggy/image/upload"
 
 HEADERS = {
     "accept": "application/json, text/plain, */*",
@@ -74,6 +75,20 @@ def product_link(product):
     return f"{BASE_URL}{SEARCH_PAGE_PATH}?{params}"
 
 
+def product_image_url(variation):
+    image_ids = variation.get("imageIds") or []
+    medias = variation.get("medias") or []
+
+    image_id = image_ids[0] if image_ids else None
+    if not image_id and medias:
+        image_id = medias[0].get("id")
+
+    if not image_id:
+        return None
+
+    return f"{IMAGE_BASE_URL}/fl_lossy,f_auto,q_auto,w_160,h_160,c_fit/{image_id}"
+
+
 def normalize_product(product):
     variation = selected_variation(product)
     price = variation.get("price") or {}
@@ -85,6 +100,7 @@ def normalize_product(product):
         "weight": variation.get("weightInGrams"),
         "rating": product_rating(product, variation),
         "link": product_link(product),
+        "image_url": product_image_url(variation),
     }
 
 
