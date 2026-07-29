@@ -1,0 +1,92 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Instamart Image Search</title>
+    <link rel="stylesheet" href="/static/styles.css?v=4">
+  </head>
+  <body>
+    <main class="app-shell">
+      <section class="upload-panel">
+        <div class="panel-header">
+          <div>
+            <p class="eyebrow">Instamart visual search</p>
+            <h1>Upload a product image</h1>
+          </div>
+          <span class="status-pill" id="statusPill">Ready</span>
+        </div>
+
+        <form id="uploadForm" class="upload-form">
+          <label class="drop-zone" id="dropZone" for="imageInput">
+            <input id="imageInput" name="image" type="file" accept="image/*">
+            <span class="upload-icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24" role="img">
+                <path d="M12 16V4m0 0 5 5m-5-5-5 5"></path>
+                <path d="M4 16v2a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-2"></path>
+              </svg>
+            </span>
+            <span class="drop-title" id="dropTitle">Choose image</span>
+            <span class="drop-meta" id="dropMeta">PNG, JPG, WEBP up to 8 MB</span>
+          </label>
+
+          <div class="preview-row" id="previewRow" hidden>
+            <img id="previewImage" alt="Uploaded product preview">
+            <div>
+              <p id="fileName" class="file-name"></p>
+              <button class="ghost-button" type="button" id="clearButton">Clear</button>
+            </div>
+          </div>
+
+          <button class="primary-button" type="submit" id="submitButton">
+            <svg viewBox="0 0 24 24" aria-hidden="true">
+              <path d="m21 21-4.3-4.3"></path>
+              <circle cx="11" cy="11" r="7"></circle>
+            </svg>
+            Find matches
+          </button>
+        </form>
+      </section>
+
+      <section class="results-panel">
+        <div class="results-header">
+          <div>
+            <p class="eyebrow">Top matches</p>
+            <h2 id="resultTitle">No search yet</h2>
+          </div>
+          <span class="result-count" id="resultCount">0 items</span>
+        </div>
+
+        <div class="results-body">
+          <div class="empty-state" id="emptyState">
+            <div class="empty-mark"></div>
+            <p>Results will appear here after the image is processed.</p>
+          </div>
+
+          <div class="products-grid" id="productsGrid"></div>
+        </div>
+      </section>
+    </main>
+
+    <template id="productTemplate">
+      <article class="product-card">
+        <a class="product-image-link" target="_blank" rel="noreferrer">
+          <img class="product-image" alt="">
+        </a>
+        <div class="product-copy">
+          <a class="product-name" target="_blank" rel="noreferrer"></a>
+          <div class="product-meta">
+            <span class="price"></span>
+            <span class="rating"></span>
+          </div>
+          <div class="product-specs">
+            <span class="qty"></span>
+            <span class="weight"></span>
+          </div>
+        </div>
+      </article>
+    </template>
+
+    <script src="/static/app.js?v=4"></script>
+  </body>
+</html>

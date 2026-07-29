@@ -17,6 +17,14 @@ PROMPT = (
     "Classify this image. Return a simple name of the product available in the image, your response will directly be searched " \
     "so you have to just provide a simple name of the product."
 )
+PROXY_ENV_KEYS = (
+    "HTTP_PROXY",
+    "HTTPS_PROXY",
+    "ALL_PROXY",
+    "http_proxy",
+    "https_proxy",
+    "all_proxy",
+)
 
 
 def load_dotenv(dotenv_path: Path) -> None:
@@ -36,6 +44,14 @@ def load_dotenv(dotenv_path: Path) -> None:
             os.environ[key] = value
 
 
+def clear_proxy_environment() -> None:
+    for key in PROXY_ENV_KEYS:
+        os.environ.pop(key, None)
+
+    os.environ["NO_PROXY"] = "127.0.0.1,localhost,instamart.in,*.instamart.in,googleapis.com,*.googleapis.com"
+    os.environ["no_proxy"] = os.environ["NO_PROXY"]
+
+
 def classify_image() -> dict:
     image_path = Path(IMAGE_PATH)
     api_key = os.environ.get("GEMINI_API_KEY")
@@ -50,6 +66,7 @@ def classify_image() -> dict:
         raise ValueError(f"Could not infer an image MIME type for: {image_path}")
 
     image_bytes = image_path.read_bytes()
+    clear_proxy_environment()
     client = genai.Client(api_key=api_key)
 
     response = client.models.generate_content(
@@ -68,6 +85,7 @@ def classify_image() -> dict:
 
 def main() -> None:
     load_dotenv(Path(".env"))
+    clear_proxy_environment()
     result = classify_image()
     print(json.dumps(result, indent=2, ensure_ascii=False))
 

@@ -2,7 +2,7 @@ import json
 from http.cookiejar import CookieJar
 from urllib.error import HTTPError, URLError
 from urllib.parse import urlencode
-from urllib.request import HTTPCookieProcessor, Request, build_opener
+from urllib.request import HTTPCookieProcessor, ProxyHandler, Request, build_opener
 
 
 QUERY = "Milk 1 ltr"
@@ -147,7 +147,7 @@ def extract_products(payload, limit=LIMIT):
 
 def build_client():
     cookie_jar = CookieJar()
-    return build_opener(HTTPCookieProcessor(cookie_jar))
+    return build_opener(ProxyHandler({}), HTTPCookieProcessor(cookie_jar))
 
 
 def request_json(client, url, payload):
