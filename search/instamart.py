@@ -6,7 +6,7 @@ from urllib.request import HTTPCookieProcessor, Request, build_opener
 
 
 QUERY = "Milk 1 ltr"
-LIMIT = 10
+LIMIT = 5
 
 BASE_URL = "https://instamart.in"
 SEARCH_PAGE_PATH = "/search"
@@ -64,18 +64,14 @@ def product_rating(product, variation):
     return {"value": value, "count": count}
 
 
-def product_details(product, variation):
-    return {
-        "quantity": variation.get("quantityDescription"),
-        "secondary_quantity": variation.get("secondaryQuantityDescription"),
-        "weight_in_grams": variation.get("weightInGrams"),
-        "unit_level_price": (variation.get("price") or {}).get("unitLevelPrice") or None,
-        "brand": product.get("brand") or variation.get("brandName"),
-        "category": variation.get("category"),
-        "sub_category": variation.get("subCategoryType"),
-        "short_description": variation.get("shortDescription") or None,
-        "in_stock": product.get("inStock"),
-    }
+def product_link(product):
+    product_id = product.get("productId")
+    if product_id:
+        return f"{BASE_URL}/item/{product_id}"
+
+    product_name = product.get("displayName")
+    params = urlencode({"custom_back": "true", "query": product_name or ""})
+    return f"{BASE_URL}{SEARCH_PAGE_PATH}?{params}"
 
 
 def normalize_product(product):
@@ -85,9 +81,10 @@ def normalize_product(product):
     return {
         "product_name": product.get("displayName") or variation.get("displayName"),
         "price": money_value(price.get("offerPrice")),
-        "mrp": money_value(price.get("mrp")),
+        "qty": variation.get("quantityDescription"),
+        "weight": variation.get("weightInGrams"),
         "rating": product_rating(product, variation),
-        "details": product_details(product, variation),
+        "link": product_link(product),
     }
 
 

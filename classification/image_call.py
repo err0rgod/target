@@ -1,16 +1,21 @@
 import mimetypes
+import json
 import os
+import sys
 from pathlib import Path
 
 from google import genai
 from google.genai import types
 
 
+PROJECT_ROOT = Path(__file__).resolve().parents[1]
+sys.path.insert(0, str(PROJECT_ROOT))
+
 MODEL_NAME = "gemini-3.6-flash"
 IMAGE_PATH = r"D:\target\images\image.png"
 PROMPT = (
-    "Classify this image. Return a concise answer with the primary category, "
-    "important visible objects, and a short confidence note."
+    "Classify this image. Return a simple name of the product available in the image, your response will directly be searched " \
+    "so you have to just provide a simple name of the product."
 )
 
 
@@ -31,7 +36,7 @@ def load_dotenv(dotenv_path: Path) -> None:
             os.environ[key] = value
 
 
-def classify_image() -> str:
+def classify_image() -> dict:
     image_path = Path(IMAGE_PATH)
     api_key = os.environ.get("GEMINI_API_KEY")
     if not api_key:
@@ -55,13 +60,16 @@ def classify_image() -> str:
         ],
     )
 
-    return response.text or ""
+    product_name = (response.text or "").strip()
+
+    from search.instamart import fetch_instamart_products
+    return fetch_instamart_products(query=product_name)
 
 
 def main() -> None:
     load_dotenv(Path(".env"))
     result = classify_image()
-    print(result)
+    print(json.dumps(result, indent=2, ensure_ascii=False))
 
 
 if __name__ == "__main__":
