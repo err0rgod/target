@@ -1,0 +1,3 @@
+Upload or share a Reel screenshot,
+ select the visible product or dish, and get the five closest purchasable 
+ matches ranked by similarity, price and availability.
