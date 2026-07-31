@@ -1,3 +1,5 @@
+"""FastAPI backend for image-based Instamart product search."""
+
 import mimetypes
 import os
 import sys
@@ -14,7 +16,7 @@ PROJECT_ROOT = Path(__file__).resolve().parents[1]
 FRONTEND_ROOT = Path(__file__).resolve().parent
 sys.path.insert(0, str(PROJECT_ROOT))
 
-from search.instamart import fetch_instamart_products
+from search.providers import fetch_all_providers
 
 
 MODEL_NAME = "gemini-3.6-flash"
@@ -40,6 +42,7 @@ app.mount("/static", StaticFiles(directory=FRONTEND_ROOT / "static"), name="stat
 
 @app.middleware("http")
 async def no_cache_assets(request, call_next):
+    """Disable frontend caching during local development."""
     response = await call_next(request)
     if request.url.path == "/" or request.url.path.startswith("/static/"):
         response.headers["Cache-Control"] = "no-store, max-age=0"
@@ -48,6 +51,7 @@ async def no_cache_assets(request, call_next):
 
 
 def load_dotenv(dotenv_path):
+    """Load simple KEY=VALUE pairs from .env without adding a dependency."""
     if not dotenv_path.exists():
         return
 
@@ -65,6 +69,7 @@ def load_dotenv(dotenv_path):
 
 
 def clear_proxy_environment():
+    """Avoid stale localhost proxy settings breaking outbound API calls."""
     for key in PROXY_ENV_KEYS:
         os.environ.pop(key, None)
 
@@ -73,6 +78,7 @@ def clear_proxy_environment():
 
 
 def classify_image_bytes(image_bytes, mime_type):
+    """Return Gemini's concise product-name classification for uploaded bytes."""
     api_key = os.environ.get("GEMINI_API_KEY")
     if not api_key:
         raise RuntimeError("GEMINI_API_KEY was not found. Add it to .env or your environment.")
@@ -92,17 +98,20 @@ def classify_image_bytes(image_bytes, mime_type):
 
 @app.on_event("startup")
 def startup():
+    """Initialize environment configuration when FastAPI starts."""
     load_dotenv(PROJECT_ROOT / ".env")
     clear_proxy_environment()
 
 
 @app.get("/")
 def index():
+    """Serve the single-page upload UI."""
     return FileResponse(FRONTEND_ROOT / "templates" / "index.html")
 
 
 @app.post("/api/search-image")
 async def search_image(image: UploadFile = File(...)):
+    """Classify an uploaded image and return the top five Instamart matches."""
     mime_type = image.content_type or mimetypes.guess_type(image.filename or "")[0]
     if not mime_type or not mime_type.startswith("image/"):
         raise HTTPException(status_code=400, detail="The uploaded file must be an image.")
@@ -119,11 +128,14 @@ async def search_image(image: UploadFile = File(...)):
         raise HTTPException(status_code=400, detail=f"Gemini classification failed: {error}") from error
 
     try:
-        results = fetch_instamart_products(query=detected_product, limit=5)
+        provider_results = fetch_all_providers(query=detected_product, limit=6)
     except Exception as error:
-        raise HTTPException(status_code=400, detail=f"Instamart search failed: {error}") from error
+        raise HTTPException(status_code=400, detail=f"Provider search failed: {error}") from error
+
+    instamart_results = provider_results.get("instamart", {})
 
     return {
         "detected_product": detected_product,
-        "products": results["products"],
+        "products": instamart_results.get("products", []),
+        "providers": provider_results,
     }

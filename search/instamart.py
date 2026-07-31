@@ -1,3 +1,11 @@
+"""Raw HTTP client for Instamart search results.
+
+The public search page is a client-rendered app, so this module seeds the same
+web session and calls the JSON endpoint used by that page. The API response is
+large and nested; the helpers below normalize it into the small product shape
+used by the FastAPI frontend.
+"""
+
 import json
 from http.cookiejar import CookieJar
 from urllib.error import HTTPError, URLError
@@ -27,6 +35,7 @@ HEADERS = {
 
 
 def money_value(value):
+    """Convert Instamart money objects into a compact amount/currency dict."""
     if not isinstance(value, dict):
         return None
 
@@ -45,6 +54,7 @@ def money_value(value):
 
 
 def selected_variation(product):
+    """Pick the listing variation Instamart shows in search results."""
     variations = product.get("variations") or []
     for variation in variations:
         if variation.get("listingVariant"):
@@ -53,6 +63,7 @@ def selected_variation(product):
 
 
 def product_rating(product, variation):
+    """Extract rating value/count from a product or its selected variation."""
     rating = variation.get("rating") or product.get("rating")
     if not isinstance(rating, dict):
         return None
@@ -66,6 +77,7 @@ def product_rating(product, variation):
 
 
 def product_link(product):
+    """Build the direct Instamart item URL from productId when available."""
     product_id = product.get("productId")
     if product_id:
         return f"{BASE_URL}/item/{product_id}"
@@ -76,6 +88,7 @@ def product_link(product):
 
 
 def product_image_url(variation):
+    """Build a small catalog image URL from Instamart media identifiers."""
     image_ids = variation.get("imageIds") or []
     medias = variation.get("medias") or []
 
@@ -90,6 +103,7 @@ def product_image_url(variation):
 
 
 def normalize_product(product):
+    """Map an Instamart item object to the UI/API product schema."""
     variation = selected_variation(product)
     price = variation.get("price") or {}
 
@@ -105,6 +119,7 @@ def normalize_product(product):
 
 
 def walk_json(value):
+    """Yield every dict nested inside a JSON-compatible object."""
     if isinstance(value, dict):
         yield value
         for child in value.values():
@@ -115,6 +130,7 @@ def walk_json(value):
 
 
 def extract_products(payload, limit=LIMIT):
+    """Find product item lists in the nested API payload and return unique items."""
     products = []
     seen = set()
 
@@ -146,11 +162,13 @@ def extract_products(payload, limit=LIMIT):
 
 
 def build_client():
+    """Create an opener with cookies enabled and proxy use disabled."""
     cookie_jar = CookieJar()
     return build_opener(ProxyHandler({}), HTTPCookieProcessor(cookie_jar))
 
 
 def request_json(client, url, payload):
+    """POST JSON to Instamart and return the decoded response body."""
     body = json.dumps(payload).encode("utf-8")
     request = Request(url, data=body, headers=HEADERS, method="POST")
 
@@ -167,6 +185,7 @@ def request_json(client, url, payload):
 
 
 def seed_session(client, query):
+    """Visit the search page first so Instamart sets required session cookies."""
     params = urlencode({"custom_back": "true", "query": query})
     url = f"{BASE_URL}{SEARCH_PAGE_PATH}?{params}"
     request = Request(url, headers={k: v for k, v in HEADERS.items() if k != "content-type"})
@@ -181,6 +200,7 @@ def seed_session(client, query):
 
 
 def fetch_instamart_products(query=QUERY, limit=LIMIT):
+    """Search Instamart and return normalized products for a text query."""
     client = build_client()
     seed_session(client, query)
 
@@ -206,6 +226,7 @@ def fetch_instamart_products(query=QUERY, limit=LIMIT):
 
 
 def main():
+    """Run a sample CLI search for local debugging."""
     result = fetch_instamart_products()
     print(json.dumps(result, indent=2, ensure_ascii=False))
 
